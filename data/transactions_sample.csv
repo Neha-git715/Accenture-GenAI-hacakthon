@@ -1,0 +1,4 @@
+Customer_ID,Amount,Date,Merchant
+CUST-001,150,2023-01-16,Amazon
+CUST-001,200,2023-01-18,Walmart
+CUST-002,300,2023-02-21,BestBuy

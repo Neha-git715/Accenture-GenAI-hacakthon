@@ -1,0 +1,7 @@
+# ollama, fastapi, pandas
+
+fastapi>=0.95.0
+ollama>=0.1.0
+pandas>=1.5.0
+uvicorn>=0.21.0
+python-dotenv>=0.21.0

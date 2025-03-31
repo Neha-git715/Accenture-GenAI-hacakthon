@@ -1,0 +1,4 @@
+Customer_ID,Amount,Loan_Type,Date
+CUST-001,5000,Mortgage,15-01-2023
+CUST-002,10000,Personal,20-02-2023
+CUST-003,7500,Auto,10-03-2023
