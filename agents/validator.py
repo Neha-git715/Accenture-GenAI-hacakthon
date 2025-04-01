@@ -2,70 +2,46 @@
 #Ensures no PII leaks/compliance
 
 import pandas as pd
-from typing import Dict, List
 from config.standards import BANKING_RULES
+from typing import Dict, List
 
 class BankingValidator:
-    """Enhanced validator with complete banking compliance checks"""
+    """Handles banking-specific data validation"""
 
     @staticmethod
-    def generate_data_product_schema(source_tables: List[str]) -> Dict:
-        """Generates schema based on available sources"""
-        base_schema = {
-            "Customer_ID": {
-                "type": "string",
-                "source": "all",
-                "description": "Primary customer identifier",
-                "required": True
-            }
+    def detect_aml_risks(df: pd.DataFrame) -> Dict[str, List]:
+        """
+        Flags transactions requiring AML review
+        Returns: {'high_risk': [tx_ids], 'suspicious': [tx_ids]}
+        """
+        risks = {
+            'high_risk': [],
+            'suspicious': []
         }
-
-        # Dynamic schema additions
-        if 'accounts' in source_tables:
-            base_schema["Total_Balance"] = {
-                "type": "float",
-                "sources": ["accounts"],
-                "calculation": "sum(balance)",
-                "description": "Sum of all account balances"
-            }
-
-        if 'transactions' in source_tables:
-            base_schema["Transaction_Count"] = {
-                "type": "integer",
-                "sources": ["transactions"],
-                "calculation": "count",
-                "description": "Number of transactions"
-            }
-
-        return base_schema
-
-    @staticmethod
-    def validate_data_product(df: pd.DataFrame) -> Dict:
-        """Comprehensive data product validation"""
-        results = {
-            "compliance": {
-                "missing_fields": [],
-                "pii_exposure": False,
-                "data_quality": []
-            },
-            "business_rules": []
-        }
-
-        # Check required fields
-        required = BANKING_RULES['required_fields']
-        results["compliance"]["missing_fields"] = [
-            field for field in required if field not in df.columns
-        ]
-
-        # PII check
-        pii_fields = BANKING_RULES['pii_fields'] + ['Name', 'Email', 'Phone']
-        results["compliance"]["pii_exposure"] = any(
-            field in df.columns for field in pii_fields
-        )
-
-        # Data quality checks
-        if 'Amount' in df.columns:
-            if df['Amount'].min() < 0:
-                results["compliance"]["data_quality"].append("Negative amounts found")
         
-        return results
+        if 'Amount' in df.columns:
+            # Large transactions
+            large_tx = df[df['Amount'] > BANKING_RULES['AML_THRESHOLD']]
+            risks['high_risk'].extend(large_tx.get('Transaction_ID', []))
+            
+            # Rapid fire transactions
+            if 'Date' in df.columns:
+                df['Date'] = pd.to_datetime(df['Date'])
+                df = df.sort_values('Date')
+                time_diff = df['Date'].diff().dt.total_seconds()
+                rapid = df[(time_diff < 3600) & (df['Amount'] > 5000)]
+                risks['suspicious'].extend(rapid.get('Transaction_ID', []))
+        
+        return risks
+
+    @staticmethod
+    def validate_pii(df: pd.DataFrame) -> bool:
+        """Check for accidental PII exposure"""
+        pii_fields = BANKING_RULES['pii_fields'] + ['Name', 'Email']
+        return not any(col.lower() in df.columns for col in pii_fields)
+
+    @staticmethod
+    def check_sql_injection(sql: str) -> bool:
+        """Prevent malicious SQL"""
+        banned = BANKING_RULES['SQL_BLACKLIST'] + [';--', 'xp_', 'exec']
+        return not any(cmd in sql.upper() for cmd in banned)

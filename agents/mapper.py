@@ -2,112 +2,172 @@
 #handles the actual data joins
 
 import pandas as pd
-from typing import Dict, List
+import numpy as np
+from typing import Dict, List, Optional
 from config.standards import BANKING_RULES
+from agents.validator import BankingValidator
 
-class DataProductMapper:
-    """Complete data product mapper with banking-specific rules"""
-
-    def __init__(self):
-        self.sources = {
-            'customers': 'data/customers.csv',
-            'accounts': 'data/accounts.csv',
-            'transactions': 'data/transactions.csv',
-            'loans': 'data/loans.csv'
-        }
-
-    def identify_sources(self, requirements: str) -> Dict:
-        """Smart source identification with keyword matching"""
-        required_sources = {}
-        
-        requirements_lower = requirements.lower()
-        
-        if any(x in requirements_lower for x in ['customer', 'tier', 'name']):
-            required_sources['customers'] = self.sources['customers']
-            
-        if any(x in requirements_lower for x in ['balance', 'account']):
-            required_sources['accounts'] = self.sources['accounts']
-            
-        if any(x in requirements_lower for x in ['transaction', 'payment']):
-            required_sources['transactions'] = self.sources['transactions']
-            
-        if any(x in requirements_lower for x in ['loan', 'mortgage']):
-            required_sources['loans'] = self.sources['loans']
-            
-        return required_sources
-
-    def create_mapping(self, sources: Dict, target_schema: Dict) -> List[Dict]:
-        """Creates detailed field mappings"""
-        mappings = []
-        
-        for target_field, config in target_schema.items():
-            mapping = {
-                "target": target_field,
-                "description": config.get("description", ""),
-                "sources": [],
-                "transformations": [],
-                "business_rules": []
-            }
-            
-            # Customer ID mapping
-            if target_field == "Customer_ID":
-                mapping['sources'] = [{
-                    "table": "customers",
-                    "field": "Customer_ID",
-                    "type": "direct"
-                }]
-                mapping['transformations'] = ["direct_copy"]
-                
-            # Balance calculations
-            elif target_field == "Total_Balance":
-                mapping['sources'] = [{
-                    "table": "accounts",
-                    "field": "Balance",
-                    "type": "numeric"
-                }]
-                mapping['transformations'] = ["sum"]
-                mapping['business_rules'] = ["ignore_negative_balances"]
-                
-            mappings.append(mapping)
-            
-        return mappings
-
-    def execute_mapping(self, mappings: List[Dict]) -> pd.DataFrame:
-        """Executes all mappings to create final data product"""
-        # Load all source data
-        loaded_data = {}
-        for mapping in mappings:
-            for source in mapping['sources']:
-                if source['table'] not in loaded_data:
-                    loaded_data[source['table']] = pd.read_csv(self.sources[source['table']])
-        
-        # Apply transformations
-        result = pd.DataFrame()
-        
-        for mapping in mappings:
-            target = mapping['target']
-            
-            if mapping['transformations'] == ["direct_copy"]:
-                src = mapping['sources'][0]
-                result[target] = loaded_data[src['table']][src['field']]
-                
-            elif "sum" in mapping['transformations']:
-                sum_values = pd.Series(dtype='float64')
-                for src in mapping['sources']:
-                    if src['table'] in loaded_data:
-                        if sum_values.empty:
-                            sum_values = loaded_data[src['table']][src['field']]
-                        else:
-                            sum_values += loaded_data[src['table']][src['field']]
-                result[target] = sum_values
-                
-        return result
+class DataMapper:
+    """
+    Handles secure banking data operations with:
+    - Schema-aware merging
+    - PII anonymization
+    - AML/compliance checks
+    - SQL injection prevention
+    """
 
     @staticmethod
-    def safe_display(df: pd.DataFrame) -> pd.DataFrame:
-        """Anonymizes data for display"""
+    def load_data(file_path: str) -> pd.DataFrame:
+        """
+        Loads banking CSV with validation
+        Args:
+            file_path: Path to CSV (e.g., 'data/loans.csv')
+        Returns:
+            pd.DataFrame: Validated banking data
+        Raises:
+            ValueError: If required columns missing
+        """
+        # Validate file type
+        if not file_path.endswith('.csv'):
+            raise ValueError("Only CSV files supported")
+
+        df = pd.read_csv(file_path)
+        
+        # Check required columns
+        required_columns = {
+            'customers.csv': ['Customer_ID', 'Tier'],
+            'loans.csv': ['Customer_ID', 'Type', 'Amount'],
+            'transactions.csv': ['Customer_ID', 'Amount', 'Date'],
+            'accounts.csv': ['Customer_ID', 'Type', 'Balance']
+        }
+        
+        filename = file_path.split('/')[-1]
+        if filename in required_columns:
+            missing = [col for col in required_columns[filename] 
+                      if col not in df.columns]
+            if missing:
+                raise ValueError(f"Missing required columns in {filename}: {missing}")
+        
+        # Convert date fields
+        if 'Date' in df.columns:
+            df['Date'] = pd.to_datetime(df['Date'])
+            
+        return df
+
+    @staticmethod
+    def merge_tables(left_path: str, right_path: str, 
+                    on: str = "Customer_ID") -> pd.DataFrame:
+        """
+        Banking-safe table joining with compliance checks
+        Args:
+            left_path: Path to first CSV
+            right_path: Path to second CSV
+            on: Join column (default: Customer_ID)
+        Returns:
+            pd.DataFrame: Merged data with PII removed
+        """
+        # Validate join column
+        if on not in BANKING_STANDARDS['approved_joins']:
+            raise ValueError(f"Joining on {on} violates banking standards")
+        
+        left = DataMapper.load_data(left_path)
+        right = DataMapper.load_data(right_path)
+        
+        # Inner join for data integrity
+        merged = pd.merge(
+            left, 
+            right, 
+            on=on,
+            how='inner',
+            validate='one_to_many'  # Ensures no duplicate joins
+        )
+        
+        # Apply banking rules
+        if 'Amount' in merged.columns:
+            merged = merged[
+                merged['Amount'] >= BANKING_STANDARDS['amount_checks']['min_transaction']
+            ]
+            
+        if 'Balance' in merged.columns:
+            merged['Balance'] = merged['Balance'].apply(
+                lambda x: max(float(x), 0)  # No negative balances
+            )
+        
+        # Anonymize before returning
+        return DataMapper.anonymize(merged).drop_duplicates()
+
+    @staticmethod
+    def anonymize(df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Removes/masks PII from banking data
+        Args:
+            df: Input DataFrame
+        Returns:
+            pd.DataFrame: Anonymized data
+        """
+        # Mask direct identifiers
         if 'Name' in df.columns:
             df['Name'] = 'CONFIDENTIAL'
         if 'Email' in df.columns:
-            df['Email'] = '***@bank.com'
-        return df
+            df['Email'] = df['Email'].apply(
+                lambda x: x.split('@')[0][:2] + '****@bank.com'
+            )
+        
+        # Remove unused PII
+        pii_cols = [col for col in df.columns 
+                   if any(pii in col.lower() 
+                         for pii in BANKING_STANDARDS['pii_fields'])]
+        return df.drop(columns=pii_cols, errors='ignore')
+
+    @staticmethod
+    def validate_sql(sql: str) -> bool:
+        """
+        Checks for dangerous SQL operations
+        Args:
+            sql: SQL query string
+        Returns:
+            bool: True if query is safe
+        """
+        banned = BANKING_STANDARDS['SQL_BLACKLIST'] + [';--', 'xp_', 'exec']
+        return not any(cmd in sql.upper() for cmd in banned)
+
+    @staticmethod
+    def get_sample_data(query: str = None) -> List[Dict]:
+        """
+        Generates compliant sample data for API responses
+        Args:
+            query: Optional natural language query
+        Returns:
+            List[Dict]: Sample records (anonymized)
+        """
+        # Default join for demo purposes
+        df = DataMapper.merge_tables(
+            "data/customers.csv", 
+            "data/loans.csv"
+        )
+        
+        # Filter based on query if provided
+        if query and "mortgage" in query.lower():
+            df = df[df['Type'] == 'Mortgage']
+        elif query and "gold" in query.lower():
+            df = df[df['Tier'] == 'Gold']
+        
+        return BankingValidator().filter_risks(df).head(3).to_dict(orient='records')
+    
+
+# Example usage
+if __name__ == "__main__":
+    try:
+        # Test merge
+        sample = DataMapper.merge_tables(
+            "data/customers.csv",
+            "data/transactions.csv"
+        )
+        print("Sample merged data:\n", sample.head(2))
+        
+        # Test validation
+        print("SQL validation:", 
+              DataMapper.validate_sql("SELECT * FROM customers"))
+              
+    except Exception as e:
+        print(f"Banking data error: {str(e)}")

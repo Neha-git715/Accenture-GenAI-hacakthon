@@ -1,64 +1,36 @@
 #fast api endpoints
 # /design-product, /validate etc.
 
-from fastapi import APIRouter, HTTPException, Body
+from fastapi import APIRouter, HTTPException
 from agents.interpreter import BankingInterpreter
-from agents.validator import BankingValidator
-from agents.mapper import DataProductMapper
-from typing import Dict, List
-import pandas as pd
+from agents.mapper import DataMapper
 
 router = APIRouter()
 interpreter = BankingInterpreter()
-validator = BankingValidator()
-mapper = DataProductMapper()
 
 @router.post("/design-product")
-async def design_product(
-    requirements: str = Body(..., embed=True, example="Create customer 360 view")
-) -> Dict:
-    """End-to-end data product creation flow with:
-    - Source identification
-    - Schema generation
-    - Data mapping
-    - Compliance certification
-    """
-    try:
-        # Step 1: Identify relevant data sources
-        sources = mapper.identify_sources(requirements)
-        if not sources:
-            raise ValueError("No relevant data sources found for these requirements")
+async def design_product(query: str):
+    result = interpreter.generate_sql(query)
+    if result["error"]:
+        raise HTTPException(400, detail=result["error"])
+    
+    if not DataMapper.validate_sql(result["sql"]):
+        raise HTTPException(400, detail="Query violates banking rules")
+    
+    return {
+        "sql": result["sql"],
+        "sample_data": DataMapper.get_sample_data(),
+        "schema": "customers(id,name,tier,account_type,balance)"
+    }
 
-        # Step 2: Generate target schema
-        schema = validator.generate_data_product_schema(list(sources.keys()))
-        
-        # Step 3: Create field mappings
-        mappings = mapper.create_mapping(sources, schema)
-        
-        # Step 4: Execute transformations
-        data_product = mapper.execute_mapping(mappings)
-        
-        # Step 5: Validate and certify
-        certification = validator.validate_data_product(data_product)
-        
-        # Prepare sample data (anonymized)
-        sample_data = DataMapper.safe_display(data_product.head(3)).to_dict(orient='records')
+@staticmethod
+def validate_sql(sql: str) -> bool:
+    """Check for forbidden operations"""
+    banned = ['DROP', 'DELETE', 'UPDATE']
+    return not any(cmd in sql.upper() for cmd in banned)
 
-        return {
-            "schema": schema,
-            "mappings": mappings,
-            "sample_data": sample_data,
-            "certification": certification,
-            "source_tables": sources,
-            "status": "success"
-        }
-        
-    except Exception as e:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "error": str(e),
-                "status": "failed",
-                "suggestion": "Try more specific requirements like 'Create view with customer balances and risk scores'"
-            }
-        )
+@staticmethod
+def get_sample_data() -> list:
+    """Return 3 rows from merged data for demo"""
+    df = DataMapper.merge_tables("data/customers.csv", "data/loans.csv")
+    return df.head(3).to_dict(orient='records')

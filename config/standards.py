@@ -1,31 +1,22 @@
 #PII /field requirements
 
-BANKING_RULES = {
-    # Data Product Requirements
-    "required_fields": ["Customer_ID", "Tier", "Risk_Score"],
-    "pii_fields": ["SSN", "Account_Number", "Email"],
+BANKING_RULES= {
+    # Field Requirements
+    "required_fields": ["Customer_ID", "Tier"],
+    "pii_fields": ["SSN", "Account_Number"],
     
     # Business Rules
-    "tiers": ["platinum", "gold", "silver", "private"],
-    "risk_categories": ["low", "medium", "high"],
-    
-    # Technical Standards
-    "allowed_transformations": ["direct", "sum", "average", "count"],
-    "required_documentation": [
-        "source_systems",
-        "field_mappings", 
-        "refresh_schedule"
-    ],
+    "tiers": ["platinum", "gold", "silver"],
+    "min_investment": 100000,
+    "amount_checks": {
+        "min_transaction": 1,  # Reject $0 transactions
+        "max_single_deposit": 10000
+    },
     
     # Security
-    "encryption_required": True,
-    "retention_period_days": 365,
+    "SQL_BLACKLIST": ["DROP", "DELETE", "UPDATE", "INSERT", "TRUNCATE"],
+    "AML_THRESHOLD": 10000,  # Transactions >$10K need review
     
-    # Sample Target Schema
-    "customer_360_schema": {
-        "Customer_ID": {"type": "string", "source": "all"},
-        "Total_Assets": {"type": "float", "sources": ["accounts", "investments"]},
-        "Transaction_Count": {"type": "integer", "source": "transactions"},
-        "Risk_Category": {"type": "string", "logic": "business_rules"}
-    }
+    # Schema
+    "approved_joins": ["Customer_ID", "Account_ID"]
 }
