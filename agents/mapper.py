@@ -4,7 +4,7 @@
 import pandas as pd
 import numpy as np
 from typing import Dict, List, Optional
-from config.standards import BANKING_RULES
+from config.banking_standards import BANKING_STANDARDS, BANKING_RULES, SOURCE_SYSTEMS, DATA_PRODUCT_TEMPLATES
 from agents.validator import BankingValidator
 import ollama
 from models.data_product import DataProduct, Attribute, SourceSystem
@@ -181,39 +181,11 @@ class DataProductMapper:
         
     def _initialize_source_systems(self) -> List[SourceSystem]:
         """
-        Initialize available source systems
+        Initialize available source systems from standards
         """
         return [
-            SourceSystem(
-                system_id="SYS001",
-                system_name="Core Banking System",
-                system_type="mainframe",
-                connection_details={
-                    "host": "mainframe.example.com",
-                    "port": "1433",
-                    "database": "core_banking"
-                }
-            ),
-            SourceSystem(
-                system_id="SYS002",
-                system_name="CRM System",
-                system_type="relational",
-                connection_details={
-                    "host": "crm.example.com",
-                    "port": "5432",
-                    "database": "crm_db"
-                }
-            ),
-            SourceSystem(
-                system_id="SYS003",
-                system_name="Digital Banking Platform",
-                system_type="nosql",
-                connection_details={
-                    "host": "digital.example.com",
-                    "port": "27017",
-                    "database": "digital_banking"
-                }
-            )
+            SourceSystem(**system_config)
+            for system_config in SOURCE_SYSTEMS.values()
         ]
     
     async def design_data_product(self, requirements: Dict) -> DataProduct:
@@ -328,10 +300,8 @@ class DataProductMapper:
         # This is a simplified implementation - in production, you'd want more robust parsing
         sections = response.split("\n\n")
         
-        # Extract basic product information
-        name = "Customer 360 View"  # default
-        description = "Comprehensive view of customer information"
-        version = "1.0.0"
+        # Use template as base
+        template = DATA_PRODUCT_TEMPLATES['customer_360']
         
         # Create attributes list
         attributes = []
@@ -341,14 +311,17 @@ class DataProductMapper:
                 for line in attribute_lines:
                     if line.strip().startswith("-"):
                         attr_info = line.strip("- ").strip()
-                        # Create Attribute object
+                        # Create Attribute object with standards
                         attribute = Attribute(
                             attribute_id=f"ATTR{len(attributes)+1:03d}",
                             attribute_name=attr_info.split(":")[0].strip(),
-                            attribute_type="string",  # default type
+                            attribute_type=BANKING_STANDARDS['DATA_TYPES'].get(
+                                attr_info.split(":")[0].strip().lower(),
+                                {'type': 'string', 'format': None, 'description': ''}
+                            )['type'],
                             description=attr_info.split(":")[1].strip() if ":" in attr_info else "",
-                            is_pii=False,
-                            is_required=True,
+                            is_pii=attr_info.split(":")[0].strip().lower() in BANKING_STANDARDS['VALIDATION_RULES']['required_fields'],
+                            is_required=attr_info.split(":")[0].strip().lower() in BANKING_STANDARDS['VALIDATION_RULES']['required_fields'],
                             source_system="core_banking",  # default
                             source_field=attr_info.split(":")[0].strip().lower()
                         )
@@ -357,14 +330,14 @@ class DataProductMapper:
         # Create DataProduct object
         return DataProduct(
             product_id="DP001",
-            product_name=name,
+            product_name=template['name'],
             product_type="customer_360",
-            description=description,
-            version=version,
+            description=template['description'],
+            version="1.0.0",
             attributes=attributes,
             source_systems=self.source_systems,
-            refresh_frequency="daily",
-            retention_period="7 years",
+            refresh_frequency=template['refresh_frequency'],
+            retention_period=template['retention_period'],
             owner="Data Governance Team"
         )
     
@@ -381,14 +354,17 @@ class DataProductMapper:
                 for line in attribute_lines:
                     if line.strip().startswith("-"):
                         attr_info = line.strip("- ").strip()
-                        # Create Attribute object
+                        # Create Attribute object with standards
                         attribute = Attribute(
                             attribute_id=f"ATTR{len(attributes)+1:03d}",
                             attribute_name=attr_info.split(":")[0].strip(),
-                            attribute_type="string",  # default type
+                            attribute_type=BANKING_STANDARDS['DATA_TYPES'].get(
+                                attr_info.split(":")[0].strip().lower(),
+                                {'type': 'string', 'format': None, 'description': ''}
+                            )['type'],
                             description=attr_info.split(":")[1].strip() if ":" in attr_info else "",
-                            is_pii="PII" in attr_info.upper(),
-                            is_required="required" in attr_info.lower(),
+                            is_pii=attr_info.split(":")[0].strip().lower() in BANKING_STANDARDS['VALIDATION_RULES']['required_fields'],
+                            is_required=attr_info.split(":")[0].strip().lower() in BANKING_STANDARDS['VALIDATION_RULES']['required_fields'],
                             source_system="core_banking",  # default
                             source_field=attr_info.split(":")[0].strip().lower()
                         )

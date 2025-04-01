@@ -2,7 +2,7 @@
 #Ensures no PII leaks/compliance
 
 import pandas as pd
-from config.standards import BANKING_RULES
+from config.banking_standards import BANKING_STANDARDS, BANKING_RULES
 from typing import Dict, List, Optional
 import ollama
 from models.data_product import DataProduct, Attribute, DataQualityRule
@@ -51,30 +51,9 @@ class BankingValidator:
 class DataProductValidator:
     def __init__(self):
         self.model = "llama2"
-        self.compliance_rules = self._initialize_compliance_rules()
+        self.compliance_rules = BANKING_RULES['COMPLIANCE_RULES']
+        self.data_quality_rules = BANKING_RULES['DATA_QUALITY_RULES']
         
-    def _initialize_compliance_rules(self) -> Dict:
-        """
-        Initialize compliance rules for different data types
-        """
-        return {
-            "pii": {
-                "encryption_required": True,
-                "masking_required": True,
-                "access_control": "strict",
-                "retention_period": "7 years"
-            },
-            "financial": {
-                "precision": "decimal(18,2)",
-                "validation_rules": ["not_null", "positive_value"],
-                "audit_required": True
-            },
-            "personal": {
-                "validation_rules": ["not_null", "format_check"],
-                "access_control": "restricted"
-            }
-        }
-    
     async def validate_data_product(self, data_product: DataProduct) -> Dict:
         """
         Validate data product design and ensure compliance
@@ -123,17 +102,18 @@ class DataProductValidator:
         
         # Check if PII data has required security measures
         if attribute.is_pii:
-            # Add encryption rule if not present
-            if not any(rule.rule_name == "encryption" for rule in attribute.data_quality_rules):
-                validation["issues"].append(f"PII attribute {attribute.attribute_name} missing encryption rule")
-                validation["recommendations"].append("Add encryption rule for PII data")
+            # Check GDPR compliance
+            if self.compliance_rules['gdpr']['consent_required']:
+                validation["issues"].append(f"PII attribute {attribute.attribute_name} requires GDPR consent")
+                validation["recommendations"].append("Add consent tracking for PII data")
                 validation["is_valid"] = False
             
-            # Add masking rule if not present
-            if not any(rule.rule_name == "masking" for rule in attribute.data_quality_rules):
-                validation["issues"].append(f"PII attribute {attribute.attribute_name} missing masking rule")
-                validation["recommendations"].append("Add masking rule for PII data")
-                validation["is_valid"] = False
+            # Check PCI DSS compliance for payment data
+            if attribute.attribute_name.lower() in ['credit_card', 'bank_account']:
+                if self.compliance_rules['pci_dss']['card_data_encryption']:
+                    validation["issues"].append(f"Payment data {attribute.attribute_name} requires encryption")
+                    validation["recommendations"].append("Implement encryption for payment data")
+                    validation["is_valid"] = False
         
         return validation
     
@@ -156,10 +136,22 @@ class DataProductValidator:
         
         # Check data type specific rules
         if attribute.attribute_type == "string":
-            if not any(rule.rule_name == "format_check" for rule in attribute.data_quality_rules):
-                validation["issues"].append(f"String attribute {attribute.attribute_name} missing format check")
-                validation["recommendations"].append("Add format check rule for string field")
-                validation["is_valid"] = False
+            # Check format rules
+            format_rules = BANKING_STANDARDS['VALIDATION_RULES']['format_rules']
+            if attribute.attribute_name.lower() in format_rules:
+                if not any(rule.rule_name == "format_check" for rule in attribute.data_quality_rules):
+                    validation["issues"].append(f"String attribute {attribute.attribute_name} missing format check")
+                    validation["recommendations"].append(f"Add format check rule for {attribute.attribute_name}")
+                    validation["is_valid"] = False
+        
+        # Check specific data quality rules
+        if attribute.attribute_name.lower() in self.data_quality_rules:
+            rules = self.data_quality_rules[attribute.attribute_name.lower()]
+            for rule_name, rule_value in rules.items():
+                if rule_value and not any(rule.rule_name == rule_name for rule in attribute.data_quality_rules):
+                    validation["issues"].append(f"Attribute {attribute.attribute_name} missing {rule_name} rule")
+                    validation["recommendations"].append(f"Add {rule_name} rule for {attribute.attribute_name}")
+                    validation["is_valid"] = False
         
         return validation
     

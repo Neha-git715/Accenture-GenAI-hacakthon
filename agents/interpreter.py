@@ -5,7 +5,7 @@
 import ollama
 from typing import Dict, Optional, List
 import re
-from config.standards import BANKING_RULES
+from config.banking_standards import BANKING_STANDARDS, BANKING_RULES
 from models.data_product import DataProduct, Attribute
 
 class BankingInterpreter:
@@ -206,7 +206,7 @@ class UseCaseInterpreter:
         sections = response.split("\n\n")
         
         # Extract basic product information
-        name = "Customer 360 View"  # default
+        name = "BankGen 360"  # default
         description = "Comprehensive view of customer information"
         version = "1.0.0"
         
