@@ -1,0 +1,6 @@
+Transaction_ID,Customer_ID,Amount,Type,Date,Status
+TX-1001,CUST-001,1500,Deposit,2023-08-12,Completed
+TX-1002,CUST-002,25000,Wire,2023-08-11,Completed
+TX-1003,CUST-003,500,ATM,2023-08-10,Completed
+TX-1004,CUST-001,12000,Transfer,2023-08-09,Declined
+TX-1005,CUST-004,300000,Investment,2023-08-08,Completed
