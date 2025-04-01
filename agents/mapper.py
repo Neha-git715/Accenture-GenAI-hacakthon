@@ -6,6 +6,8 @@ import numpy as np
 from typing import Dict, List, Optional
 from config.standards import BANKING_RULES
 from agents.validator import BankingValidator
+import ollama
+from models.data_product import DataProduct, Attribute, SourceSystem
 
 class DataMapper:
     """
@@ -171,3 +173,261 @@ if __name__ == "__main__":
               
     except Exception as e:
         print(f"Banking data error: {str(e)}")
+
+class DataProductMapper:
+    def __init__(self):
+        self.model = "llama2"
+        self.source_systems = self._initialize_source_systems()
+        
+    def _initialize_source_systems(self) -> List[SourceSystem]:
+        """
+        Initialize available source systems
+        """
+        return [
+            SourceSystem(
+                system_id="SYS001",
+                system_name="Core Banking System",
+                system_type="mainframe",
+                connection_details={
+                    "host": "mainframe.example.com",
+                    "port": "1433",
+                    "database": "core_banking"
+                }
+            ),
+            SourceSystem(
+                system_id="SYS002",
+                system_name="CRM System",
+                system_type="relational",
+                connection_details={
+                    "host": "crm.example.com",
+                    "port": "5432",
+                    "database": "crm_db"
+                }
+            ),
+            SourceSystem(
+                system_id="SYS003",
+                system_name="Digital Banking Platform",
+                system_type="nosql",
+                connection_details={
+                    "host": "digital.example.com",
+                    "port": "27017",
+                    "database": "digital_banking"
+                }
+            )
+        ]
+    
+    async def design_data_product(self, requirements: Dict) -> DataProduct:
+        """
+        Design data product structure based on requirements
+        """
+        prompt = f"""
+        Design a Customer 360 data product based on the following requirements:
+        
+        Requirements: {requirements}
+        
+        Please provide:
+        1. Data product name and description
+        2. List of attributes with their types and descriptions
+        3. Source system mappings for each attribute
+        4. Data quality rules
+        """
+        
+        try:
+            response = ollama.chat(model=self.model, messages=[
+                {
+                    "role": "system",
+                    "content": "You are a data product designer specializing in Customer 360 solutions."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ])
+            
+            # Parse the response and create a DataProduct object
+            product_structure = self._parse_product_structure(response['message']['content'])
+            return product_structure
+            
+        except Exception as e:
+            raise Exception(f"Error designing data product: {str(e)}")
+    
+    async def recommend_attributes(self, use_case: str) -> List[Attribute]:
+        """
+        Recommend attributes based on use case
+        """
+        prompt = f"""
+        Recommend attributes for the following use case:
+        
+        Use Case: {use_case}
+        
+        Please provide:
+        1. List of recommended attributes
+        2. Data types for each attribute
+        3. Whether each attribute is PII
+        4. Whether each attribute is required
+        """
+        
+        try:
+            response = ollama.chat(model=self.model, messages=[
+                {
+                    "role": "system",
+                    "content": "You are a data modeling expert specializing in Customer 360 solutions."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ])
+            
+            # Parse the response and create Attribute objects
+            attributes = self._parse_attributes(response['message']['content'])
+            return attributes
+            
+        except Exception as e:
+            raise Exception(f"Error recommending attributes: {str(e)}")
+    
+    async def map_attributes(self, attributes: List[Attribute], source_systems: List[SourceSystem]) -> Dict:
+        """
+        Map attributes to source systems
+        """
+        prompt = f"""
+        Map the following attributes to appropriate source systems:
+        
+        Attributes: {[attr.attribute_name for attr in attributes]}
+        Source Systems: {[sys.system_name for sys in source_systems]}
+        
+        Please provide:
+        1. Source system mapping for each attribute
+        2. Source field name mapping
+        3. Any transformation rules needed
+        """
+        
+        try:
+            response = ollama.chat(model=self.model, messages=[
+                {
+                    "role": "system",
+                    "content": "You are a data mapping expert specializing in Customer 360 solutions."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ])
+            
+            # Parse the response and create mappings
+            mappings = self._parse_mappings(response['message']['content'], attributes, source_systems)
+            return mappings
+            
+        except Exception as e:
+            raise Exception(f"Error mapping attributes: {str(e)}")
+    
+    def _parse_product_structure(self, response: str) -> DataProduct:
+        """
+        Parse the LLM response into a DataProduct object
+        """
+        # This is a simplified implementation - in production, you'd want more robust parsing
+        sections = response.split("\n\n")
+        
+        # Extract basic product information
+        name = "Customer 360 View"  # default
+        description = "Comprehensive view of customer information"
+        version = "1.0.0"
+        
+        # Create attributes list
+        attributes = []
+        for section in sections:
+            if "attributes" in section.lower():
+                attribute_lines = section.split("\n")
+                for line in attribute_lines:
+                    if line.strip().startswith("-"):
+                        attr_info = line.strip("- ").strip()
+                        # Create Attribute object
+                        attribute = Attribute(
+                            attribute_id=f"ATTR{len(attributes)+1:03d}",
+                            attribute_name=attr_info.split(":")[0].strip(),
+                            attribute_type="string",  # default type
+                            description=attr_info.split(":")[1].strip() if ":" in attr_info else "",
+                            is_pii=False,
+                            is_required=True,
+                            source_system="core_banking",  # default
+                            source_field=attr_info.split(":")[0].strip().lower()
+                        )
+                        attributes.append(attribute)
+        
+        # Create DataProduct object
+        return DataProduct(
+            product_id="DP001",
+            product_name=name,
+            product_type="customer_360",
+            description=description,
+            version=version,
+            attributes=attributes,
+            source_systems=self.source_systems,
+            refresh_frequency="daily",
+            retention_period="7 years",
+            owner="Data Governance Team"
+        )
+    
+    def _parse_attributes(self, response: str) -> List[Attribute]:
+        """
+        Parse the LLM response into Attribute objects
+        """
+        attributes = []
+        sections = response.split("\n\n")
+        
+        for section in sections:
+            if "attributes" in section.lower():
+                attribute_lines = section.split("\n")
+                for line in attribute_lines:
+                    if line.strip().startswith("-"):
+                        attr_info = line.strip("- ").strip()
+                        # Create Attribute object
+                        attribute = Attribute(
+                            attribute_id=f"ATTR{len(attributes)+1:03d}",
+                            attribute_name=attr_info.split(":")[0].strip(),
+                            attribute_type="string",  # default type
+                            description=attr_info.split(":")[1].strip() if ":" in attr_info else "",
+                            is_pii="PII" in attr_info.upper(),
+                            is_required="required" in attr_info.lower(),
+                            source_system="core_banking",  # default
+                            source_field=attr_info.split(":")[0].strip().lower()
+                        )
+                        attributes.append(attribute)
+        
+        return attributes
+    
+    def _parse_mappings(self, response: str, attributes: List[Attribute], source_systems: List[SourceSystem]) -> Dict:
+        """
+        Parse the LLM response into attribute mappings
+        """
+        mappings = {}
+        sections = response.split("\n\n")
+        
+        for section in sections:
+            if "mapping" in section.lower():
+                mapping_lines = section.split("\n")
+                for line in mapping_lines:
+                    if line.strip().startswith("-"):
+                        mapping_info = line.strip("- ").strip()
+                        # Parse mapping information
+                        attr_name = mapping_info.split("->")[0].strip()
+                        sys_name = mapping_info.split("->")[1].strip() if "->" in mapping_info else "core_banking"
+                        
+                        # Find the attribute and source system
+                        attribute = next((attr for attr in attributes if attr.attribute_name == attr_name), None)
+                        system = next((sys for sys in source_systems if sys.system_name == sys_name), None)
+                        
+                        if attribute and system:
+                            mappings[attribute.attribute_id] = {
+                                "source_system": system.system_id,
+                                "source_field": attribute.attribute_name.lower(),
+                                "transformation_rule": None  # Will be populated by validator
+                            }
+        
+        return mappings
+    
+    async def get_source_systems(self) -> List[SourceSystem]:
+        """
+        Get available source systems
+        """
+        return self.source_systems
