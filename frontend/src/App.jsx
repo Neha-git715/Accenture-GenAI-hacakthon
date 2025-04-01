@@ -1,23 +1,21 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
-import Dashboard from './pages/Dashboard'
 import DataProducts from './pages/DataProducts'
-import Requirements from './pages/Requirements'
-import Validation from './pages/Validation'
 
-function App() {
+// Import CSS
+import './index.css'
+
+export default function App() {
   return (
     <Router>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/data-products" element={<DataProducts />} />
-          <Route path="/requirements" element={<Requirements />} />
-          <Route path="/validation" element={<Validation />} />
-        </Routes>
-      </Layout>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Navigate to="/data-products" replace />} />
+          <Route path="data-products" element={<DataProducts />} />
+          <Route path="requirements" element={<div className="text-center py-12">Requirements page coming soon...</div>} />
+          <Route path="validation" element={<div className="text-center py-12">Validation page coming soon...</div>} />
+        </Route>
+      </Routes>
     </Router>
   )
 }
-
-export default App

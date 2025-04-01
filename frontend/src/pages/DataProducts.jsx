@@ -1,137 +1,230 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
+  PlusIcon,
+  EyeIcon,
   PencilSquareIcon,
   TrashIcon,
-  EyeIcon,
 } from '@heroicons/react/24/outline'
+import { bankGenApi } from '../services/api'
 
-const products = [
+// Mock data while waiting for backend integration
+const mockProducts = [
   {
     id: 1,
-    name: 'Customer 360 View',
-    description: 'Comprehensive view of customer data across all systems',
+    name: 'Customer Profile Data',
+    description: 'Comprehensive customer information including demographics and preferences',
     status: 'Active',
-    lastUpdated: '2 hours ago',
-    refreshFrequency: 'Daily',
+    last_updated: '2024-01-04T11:24:36',
+    refresh_frequency: 'Daily'
   },
   {
     id: 2,
     name: 'Transaction History',
-    description: 'Detailed transaction records and analytics',
+    description: 'Historical record of all customer transactions and account activities',
     status: 'Active',
-    lastUpdated: '4 hours ago',
-    refreshFrequency: 'Real-time',
+    last_updated: '2024-01-04T11:24:36',
+    refresh_frequency: 'Real-time'
   },
   {
     id: 3,
-    name: 'Account Balance',
-    description: 'Current account balances and historical trends',
+    name: 'Account Balance Analytics',
+    description: 'Analytical insights into account balances and trends',
     status: 'Draft',
-    lastUpdated: '1 day ago',
-    refreshFrequency: 'Daily',
-  },
+    last_updated: '2024-01-04T11:24:36',
+    refresh_frequency: 'Hourly'
+  }
 ]
 
 export default function DataProducts() {
-  const [selectedProduct, setSelectedProduct] = useState(null)
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [showCreateModal, setShowCreateModal] = useState(false)
 
-  const handleView = (product) => {
-    setSelectedProduct(product)
+  useEffect(() => {
+    fetchSourceSystems()
+  }, [])
+
+  const fetchSourceSystems = async () => {
+    try {
+      setLoading(true)
+      // For now, use mock data
+      setProducts(mockProducts)
+      // Once backend is ready:
+      // const response = await bankGenApi.getSourceSystems()
+      // setProducts(response.data)
+    } catch (err) {
+      console.error('Detailed error:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status
+      })
+      setError(`Failed to fetch source systems: ${err.response?.data?.detail || err.message}`)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleEdit = (product) => {
-    // TODO: Implement edit functionality
-    console.log('Edit product:', product)
+  const handleView = async (product) => {
+    try {
+      const response = await bankGenApi.recommendAttributes()
+      console.log('Recommended attributes:', response.data)
+      // TODO: Show attributes in a modal
+    } catch (err) {
+      console.error('Error getting recommendations:', err)
+    }
   }
 
-  const handleDelete = (product) => {
-    // TODO: Implement delete functionality
-    console.log('Delete product:', product)
+  const handleEdit = async (product) => {
+    try {
+      const response = await bankGenApi.designDataProduct({
+        source_system: product.name,
+        // Add other required parameters
+      })
+      console.log('Design response:', response.data)
+      // TODO: Show success message
+    } catch (err) {
+      console.error('Error designing data product:', err)
+    }
+  }
+
+  const handleDelete = async (product) => {
+    try {
+      const response = await bankGenApi.validateDataProduct({
+        product_id: product.id,
+        // Add other required parameters
+      })
+      console.log('Validation response:', response.data)
+      // TODO: Show validation results
+    } catch (err) {
+      console.error('Error validating product:', err)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-red-600 text-lg">{error}</div>
+        <button 
+          onClick={fetchSourceSystems}
+          className="mt-4 btn-primary"
+        >
+          Retry
+        </button>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900">Data Products</h1>
-        <button className="btn-primary">
-          Create New Data Product
-        </button>
+      <div className="sm:flex sm:items-center">
+        <div className="sm:flex-auto">
+          <h1 className="text-2xl font-semibold text-gray-900">Data Products</h1>
+          <p className="mt-2 text-sm text-gray-700">
+            A list of all data products including their name, description, status, and other details.
+          </p>
+        </div>
+        <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center justify-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+          >
+            <PlusIcon className="h-5 w-5 mr-1.5" />
+            Design New Data Product
+          </button>
+        </div>
       </div>
 
-      {/* Products Table */}
-      <div className="card">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead>
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Description
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Updated
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Refresh Frequency
-                </th>
-                <th scope="col" className="relative px-6 py-3">
-                  <span className="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {products.map((product) => (
-                <tr key={product.id}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-500">{product.description}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      product.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {product.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {product.lastUpdated}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {product.refreshFrequency}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center space-x-3">
-                      <button
-                        onClick={() => handleView(product)}
-                        className="text-primary-600 hover:text-primary-900"
-                      >
-                        <EyeIcon className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleEdit(product)}
-                        className="text-primary-600 hover:text-primary-900"
-                      >
-                        <PencilSquareIcon className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(product)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <TrashIcon className="h-5 w-5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="mt-8 flow-root">
+        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+              <table className="min-w-full divide-y divide-gray-300">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                      Name
+                    </th>
+                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                      Description
+                    </th>
+                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                      Status
+                    </th>
+                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                      Last Updated
+                    </th>
+                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                      Refresh Frequency
+                    </th>
+                    <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                      <span className="sr-only">Actions</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 bg-white">
+                  {products.map((product) => (
+                    <tr key={product.id}>
+                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                        {product.name}
+                      </td>
+                      <td className="px-3 py-4 text-sm text-gray-500">
+                        {product.description}
+                      </td>
+                      <td className="px-3 py-4 text-sm">
+                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${
+                          product.status === 'Active'
+                            ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20'
+                            : 'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20'
+                        }`}>
+                          {product.status}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        {new Date(product.last_updated).toLocaleString()}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        {product.refresh_frequency}
+                      </td>
+                      <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => handleView(product)}
+                            className="text-primary-600 hover:text-primary-900"
+                            title="View Recommended Attributes"
+                          >
+                            <EyeIcon className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={() => handleEdit(product)}
+                            className="text-primary-600 hover:text-primary-900"
+                            title="Design Data Product"
+                          >
+                            <PencilSquareIcon className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(product)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Validate Data Product"
+                          >
+                            <TrashIcon className="h-5 w-5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </div>
