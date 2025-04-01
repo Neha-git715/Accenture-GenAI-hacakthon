@@ -1,5 +1,7 @@
-# Customer 360 Data Product - Retail Banking
-## Multi-Agent Solution for Data Product Design and Recommendation
+# BankGen 360 - Retail Banking Data Product
+
+## Overview
+This project implements a multi-agent system for designing and recommending BankGen 360 data products in retail banking. The system automates the process of understanding business requirements, designing data structures, and creating attribute mappings.
 
 ### Solution Overview
 This project implements a multi-agent system for designing and recommending Customer 360 data products in retail banking. The system automates the process of understanding business requirements, designing data structures, and creating attribute mappings.

@@ -193,7 +193,7 @@ class DataProductMapper:
         Design data product structure based on requirements
         """
         prompt = f"""
-        Design a Customer 360 data product based on the following requirements:
+        Design a BankGen 360 data product based on the following requirements:
         
         Requirements: {requirements}
         
@@ -208,7 +208,7 @@ class DataProductMapper:
             response = ollama.chat(model=self.model, messages=[
                 {
                     "role": "system",
-                    "content": "You are a data product designer specializing in Customer 360 solutions."
+                    "content": "You are a data product designer specializing in BankGen 360 solutions."
                 },
                 {
                     "role": "user",
@@ -243,7 +243,7 @@ class DataProductMapper:
             response = ollama.chat(model=self.model, messages=[
                 {
                     "role": "system",
-                    "content": "You are a data modeling expert specializing in Customer 360 solutions."
+                    "content": "You are a data modeling expert specializing in BankGen 360 solutions."
                 },
                 {
                     "role": "user",
@@ -278,7 +278,7 @@ class DataProductMapper:
             response = ollama.chat(model=self.model, messages=[
                 {
                     "role": "system",
-                    "content": "You are a data mapping expert specializing in Customer 360 solutions."
+                    "content": "You are a data mapping expert specializing in BankGen 360 solutions."
                 },
                 {
                     "role": "user",

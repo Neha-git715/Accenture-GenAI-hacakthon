@@ -15,8 +15,8 @@ class UseCaseRequest(BaseModel):
     use_case_description: str
 
 app = FastAPI(
-    title="Customer 360 Data Product API",
-    description="API for managing Customer 360 data products and recommendations",
+    title="BankGen 360 API",
+    description="API for managing BankGen 360 data products and recommendations",
     version="1.0.0"
 )
 

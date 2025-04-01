@@ -102,7 +102,7 @@ class UseCaseInterpreter:
             response = ollama.chat(model=self.model, messages=[
                 {
                     "role": "system",
-                    "content": "You are a data requirements analyst specializing in Customer 360 data products."
+                    "content": "You are a data requirements analyst specializing in BankGen 360 data products."
                 },
                 {
                     "role": "user",
@@ -183,7 +183,7 @@ class UseCaseInterpreter:
             response = ollama.chat(model=self.model, messages=[
                 {
                     "role": "system",
-                    "content": "You are a data product designer specializing in Customer 360 solutions."
+                    "content": "You are a data product designer specializing in BankGen 360 solutions."
                 },
                 {
                     "role": "user",

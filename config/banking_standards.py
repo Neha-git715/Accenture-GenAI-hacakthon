@@ -129,21 +129,21 @@ SOURCE_SYSTEMS = {
 # Data product templates
 DATA_PRODUCT_TEMPLATES = {
     'customer_360': {
-        'name': 'Customer 360 View',
-        'description': 'Comprehensive view of customer information and interactions',
+        'name': 'BankGen 360',
+        'description': 'Comprehensive view of customer information for retail banking',
         'refresh_frequency': 'daily',
         'retention_period': '7 years',
         'required_attributes': [
             'customer_id',
+            'account_number',
+            'balance',
+            'transaction_amount',
             'customer_name',
-            'date_of_birth',
+            'email',
+            'phone',
             'address',
-            'contact_info',
-            'account_numbers',
-            'account_types',
-            'account_balances',
-            'transaction_history',
-            'interaction_channels'
+            'tier',
+            'risk_score'
         ]
     }
 } 

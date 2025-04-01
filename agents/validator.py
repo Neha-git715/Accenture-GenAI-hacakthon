@@ -196,7 +196,7 @@ class DataProductValidator:
             response = ollama.chat(model=self.model, messages=[
                 {
                     "role": "system",
-                    "content": "You are a data quality expert specializing in Customer 360 solutions."
+                    "content": "You are a data quality expert specializing in BankGen 360 solutions."
                 },
                 {
                     "role": "user",
