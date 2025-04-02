@@ -1,6 +1,0 @@
-Loan_ID,Customer_ID,Type,Amount,Issue_Date,Status
-LOAN-101,CUST-001,Mortgage,500000,2023-01-10,Active
-LOAN-102,CUST-002,Auto,35000,2023-04-15,Active
-LOAN-103,CUST-003,Personal,15000,2023-07-01,Closed
-LOAN-104,CUST-001,Investment,250000,2022-05-20,Active
-LOAN-105,CUST-004,Mortgage,450000,2023-03-05,Active

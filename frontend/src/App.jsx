@@ -1,23 +1,43 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import Layout from './components/Layout'
-import DataProducts from './pages/DataProducts'
-import Requirements from './pages/Requirements'
-import Validation from './pages/Validation'
+import { Outlet } from 'react-router-dom';
+import { useAuth } from './contexts/AuthContext';
 
 // Import CSS
 import './index.css'
 
-export default function App() {
+function App() {
+  const { user } = useAuth();
+
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Navigate to="/data-products" replace />} />
-          <Route path="data-products" element={<DataProducts />} />
-          <Route path="requirements" element={<Requirements />} />
-          <Route path="validation" element={<Validation />} />
-        </Route>
-      </Routes>
-    </Router>
-  )
+    <div className="min-h-screen bg-gray-100">
+      <nav className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex">
+              <div className="flex-shrink-0 flex items-center">
+                <h1 className="text-xl font-bold text-gray-900">BankGen 360</h1>
+              </div>
+            </div>
+            <div className="flex items-center">
+              {user ? (
+                <span className="text-gray-700">{user.email}</span>
+              ) : (
+                <a
+                  href="/login"
+                  className="text-gray-700 hover:text-gray-900"
+                >
+                  Login
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <Outlet />
+      </main>
+    </div>
+  );
 }
+
+export default App;

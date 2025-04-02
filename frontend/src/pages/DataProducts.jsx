@@ -6,7 +6,7 @@ import {
   TrashIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
-import { bankGenApi } from '../services/api'
+import { bankGenApi } from '../services/api.js'
 
 export default function DataProducts() {
   const [products, setProducts] = useState([])
@@ -48,40 +48,38 @@ export default function DataProducts() {
     }
   }
 
-  const handleCreateProduct = async () => {
+  const handleCreateProduct = async (e) => {
+    e.preventDefault();
     try {
-      setLoading(true)
-      // First analyze requirements based on use case description
-      const requirementsResponse = await bankGenApi.analyzeRequirements({
-        use_case_description: newProductData.use_case_description
-      })
+      setLoading(true);
+      setError(null);
       
-      // Then design the data product based on requirements
-      const designResponse = await bankGenApi.designDataProduct(requirementsResponse.data)
-      
-      // Finally create the data product
-      const createResponse = await bankGenApi.createDataProduct({
-        ...newProductData,
-        ...designResponse.data,
+      // Create the data product
+      const response = await bankGenApi.createDataProduct({
+        name: newProductData.name,
+        description: newProductData.description,
+        refresh_frequency: newProductData.refresh_frequency,
         status: 'Draft'
-      })
+      });
       
-      // Refresh the list of products
-      fetchDataProducts()
-      setShowCreateModal(false)
+      // Refresh the list and close modal
+      await fetchDataProducts();
+      setShowCreateModal(false);
+      
+      // Reset form
       setNewProductData({
         name: '',
         description: '',
         refresh_frequency: 'Daily',
         use_case_description: ''
-      })
+      });
     } catch (err) {
-      console.error('Error creating product:', err)
-      setError(`Failed to create data product: ${err.response?.data?.detail || err.message}`)
+      console.error('Error creating product:', err);
+      setError(`Failed to create data product: ${err.response?.data?.detail || err.message}`);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleView = async (product) => {
     try {
@@ -158,38 +156,51 @@ export default function DataProducts() {
   }
 
   const renderCreateModal = () => {
+    if (!showCreateModal) return null;
+    
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Design New Data Product</h2>
-            <button onClick={() => setShowCreateModal(false)}>
+            <button 
+              onClick={() => setShowCreateModal(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
               <XMarkIcon className="h-5 w-5" />
             </button>
           </div>
-          <div className="space-y-4">
+          
+          <form onSubmit={handleCreateProduct} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Name</label>
               <input
                 type="text"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 value={newProductData.name}
                 onChange={(e) => setNewProductData({...newProductData, name: e.target.value})}
+                placeholder="Enter product name"
               />
             </div>
+            
             <div>
               <label className="block text-sm font-medium text-gray-700">Description</label>
               <textarea
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                rows={2}
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                rows={3}
                 value={newProductData.description}
                 onChange={(e) => setNewProductData({...newProductData, description: e.target.value})}
+                placeholder="Enter product description"
               />
             </div>
+            
             <div>
               <label className="block text-sm font-medium text-gray-700">Refresh Frequency</label>
               <select
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 value={newProductData.refresh_frequency}
                 onChange={(e) => setNewProductData({...newProductData, refresh_frequency: e.target.value})}
               >
@@ -200,36 +211,34 @@ export default function DataProducts() {
                 <option value="Monthly">Monthly</option>
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Use Case Description</label>
-              <textarea
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                rows={4}
-                placeholder="Describe the business use case for this data product..."
-                value={newProductData.use_case_description}
-                onChange={(e) => setNewProductData({...newProductData, use_case_description: e.target.value})}
-              />
-            </div>
-            <div className="flex justify-end space-x-3 pt-4">
+
+            {error && (
+              <div className="text-red-500 text-sm mt-2">
+                {error}
+              </div>
+            )}
+
+            <div className="flex justify-end space-x-3 mt-6">
               <button
+                type="button"
                 onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 Cancel
               </button>
               <button
-                onClick={handleCreateProduct}
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
-                disabled={!newProductData.name || !newProductData.description || !newProductData.use_case_description}
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
               >
-                Create
+                {loading ? 'Creating...' : 'Create Data Product'}
               </button>
             </div>
-          </div>
+          </form>
         </div>
       </div>
-    )
-  }
+    );
+  };
 
   const renderAttributesModal = () => {
     if (!currentProduct) return null
@@ -433,34 +442,48 @@ export default function DataProducts() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-6">
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">Data Products</h1>
+          <h1 className="text-xl font-semibold text-gray-900">Data Products</h1>
           <p className="mt-2 text-sm text-gray-700">
             A list of all data products including their name, description, status, and other details.
           </p>
         </div>
-        <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
+        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center justify-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+            className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto"
           >
-            <PlusIcon className="h-5 w-5 mr-1.5" />
+            <PlusIcon className="h-4 w-4 mr-2" />
             Design New Data Product
           </button>
         </div>
       </div>
 
-      <div className="mt-8 flow-root">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
-              {products.length === 0 ? (
-                <div className="py-12 text-center">
-                  <p className="text-gray-500">No data products available. Create your first data product!</p>
-                </div>
-              ) : (
+      {loading && (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      )}
+
+      {error && !loading && (
+        <div className="mt-6 flex items-center justify-center">
+          <div className="rounded-md bg-red-50 p-4">
+            <div className="flex">
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">{error}</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!loading && !error && (
+        <div className="mt-8 flex flex-col">
+          <div className="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+            <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+              <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
                 <table className="min-w-full divide-y divide-gray-300">
                   <thead className="bg-gray-50">
                     <tr>
@@ -490,14 +513,14 @@ export default function DataProducts() {
                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                           {product.name}
                         </td>
-                        <td className="px-3 py-4 text-sm text-gray-500">
+                        <td className="px-3 py-4 text-sm text-gray-500 max-w-md truncate">
                           {product.description}
                         </td>
                         <td className="px-3 py-4 text-sm">
-                          <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${
+                          <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
                             product.status === 'Active'
-                              ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20'
-                              : 'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-yellow-100 text-yellow-800'
                           }`}>
                             {product.status}
                           </span>
@@ -512,22 +535,22 @@ export default function DataProducts() {
                           <div className="flex justify-end gap-2">
                             <button
                               onClick={() => handleView(product)}
-                              className="text-primary-600 hover:text-primary-900"
-                              title="View Recommended Attributes"
+                              className="text-blue-600 hover:text-blue-900"
+                              title="View Details"
                             >
                               <EyeIcon className="h-5 w-5" />
                             </button>
                             <button
                               onClick={() => handleEdit(product)}
-                              className="text-primary-600 hover:text-primary-900"
-                              title="Design Data Product"
+                              className="text-blue-600 hover:text-blue-900"
+                              title="Edit"
                             >
                               <PencilSquareIcon className="h-5 w-5" />
                             </button>
                             <button
-                              onClick={() => handleValidate(product)}
+                              onClick={() => handleDeleteProduct(product)}
                               className="text-red-600 hover:text-red-900"
-                              title="Validate Data Product"
+                              title="Delete"
                             >
                               <TrashIcon className="h-5 w-5" />
                             </button>
@@ -537,11 +560,11 @@ export default function DataProducts() {
                     ))}
                   </tbody>
                 </table>
-              )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {showCreateModal && renderCreateModal()}
       {showAttributesModal && renderAttributesModal()}
