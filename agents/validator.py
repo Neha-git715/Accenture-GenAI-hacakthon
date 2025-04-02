@@ -50,7 +50,7 @@ class BankingValidator:
 
 class DataProductValidator:
     def __init__(self):
-        self.model = "llama2"
+        self.model = "tinyllama"
         self.compliance_rules = BANKING_RULES['COMPLIANCE_RULES']
         self.data_quality_rules = BANKING_RULES['DATA_QUALITY_RULES']
         

@@ -75,17 +75,20 @@ api.interceptors.response.use(
 // API endpoints matching FastAPI backend
 export const bankGenApi = {
   // Data Products
-  getDataProducts: () => axios.get(`${API_BASE_URL}/api/data-products`),
-  createDataProduct: (data) => axios.post(`${API_BASE_URL}/api/data-products`, data),
-  updateDataProduct: (id, data) => axios.put(`${API_BASE_URL}/api/data-products/${id}`, data),
-  deleteDataProduct: (id) => axios.delete(`${API_BASE_URL}/api/data-products/${id}`),
+  getDataProducts: () => api.get('/data-products'),
+  createDataProduct: (data) => api.post('/data-products', data),
+  updateDataProduct: (id, data) => api.put(`/data-products/${id}`, data),
+  deleteDataProduct: (id) => api.delete(`/data-products/${id}`),
   
-  // Recommendations
-  recommendAttributes: (data) => axios.post(`${API_BASE_URL}/api/recommend-attributes`, data),
+  // Use Case Analysis and Design - fixed to match FastAPI routes
+  analyzeRequirements: (data) => api.post('/analyze-requirements', data),
+  designDataProduct: (data) => api.post('/design-data-product', data),
+  validateDataProduct: (data) => api.post('/validate-data-product', data),
   
-  // Design and Validation
-  designDataProduct: (data) => axios.post(`${API_BASE_URL}/api/design-product`, data),
-  validateDataProduct: (data) => axios.post(`${API_BASE_URL}/api/validate-product`, data),
+  // Attributes and Source Systems
+  recommendAttributes: (useCase) => api.get(`/recommend-attributes?use_case=${encodeURIComponent(useCase)}`),
+  getSourceSystems: () => api.get('/source-systems'),
+  mapAttributes: (data) => api.post('/map-attributes', data),
 };
 
-export default api; 
+export default api;

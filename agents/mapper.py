@@ -176,7 +176,7 @@ if __name__ == "__main__":
 
 class DataProductMapper:
     def __init__(self):
-        self.model = "llama2"
+        self.model = "tinyllama"
         self.source_systems = self._initialize_source_systems()
         
     def _initialize_source_systems(self) -> List[SourceSystem]:

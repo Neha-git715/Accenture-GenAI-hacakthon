@@ -16,7 +16,7 @@ class BankingInterpreter:
     - Banking schema awareness
     """
     
-    def __init__(self, model: str = "llama2"):
+    def __init__(self, model: str = "tinyllama"):
         self.model = model
         self._setup_prompt_templates()
     
@@ -79,7 +79,7 @@ class BankingInterpreter:
 
 class UseCaseInterpreter:
     def __init__(self):
-        self.model = "llama2"  # Using Llama 2 model for analysis
+        self.model = "tinyllama"  # Using Llama 2 model for analysis
         
     async def analyze_requirements(self, use_case_description: str) -> Dict:
         """
