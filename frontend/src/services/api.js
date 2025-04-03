@@ -7,88 +7,105 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true
 });
 
-// Request interceptor for API calls
-api.interceptors.request.use(
-  (config) => {
-    console.log('API Request:', {
+// Enhanced request logger
+const requestLogger = (config) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.debug('API Request:', {
+      method: config.method.toUpperCase(),
       url: config.url,
-      method: config.method,
-      data: config.data,
-      headers: config.headers
+      params: config.params,
+      data: config.data
     });
-    return config;
-  },
-  (error) => {
-    console.error('Request Error:', error);
-    return Promise.reject(error);
   }
-);
+  return config;
+};
 
-// Response interceptor for API calls
-api.interceptors.response.use(
-  (response) => {
-    console.log('API Response:', {
-      status: response.status,
-      data: response.data,
-      headers: response.headers
-    });
-    return response;
-  },
-  async (error) => {
-    console.error('API Error:', {
+// Enhanced error handler
+const errorHandler = (error) => {
+  if (process.env.NODE_ENV === 'development') {
+    const errorData = {
       message: error.message,
-      status: error.response?.status,
-      data: error.response?.data,
-      config: error.config
-    });
+      config: {
+        url: error.config?.url,
+        method: error.config?.method
+      }
+    };
 
     if (error.response) {
-      // Handle specific error cases here
-      switch (error.response.status) {
-        case 401:
-          console.error('Unauthorized access');
-          break;
-        case 403:
-          console.error('Forbidden access');
-          break;
-        case 404:
-          console.error('Resource not found');
-          break;
-        case 500:
-          console.error('Server error');
-          break;
-        default:
-          console.error('API error occurred');
-      }
+      errorData.status = error.response.status;
+      errorData.data = error.response.data;
     } else if (error.request) {
-      console.error('No response received from server');
-    } else {
-      console.error('Error setting up request:', error.message);
+      errorData.request = error.request;
     }
 
-    return Promise.reject(error);
+    console.error('API Error:', errorData);
   }
-);
 
-// API endpoints matching FastAPI backend
-export const bankGenApi = {
-  // Data Products
-  getDataProducts: () => api.get('/data-products'),
-  createDataProduct: (data) => api.post('/data-products', data),
-  updateDataProduct: (id, data) => api.put(`/data-products/${id}`, data),
-  deleteDataProduct: (id) => api.delete(`/data-products/${id}`),
-  
-  // Use Case Analysis and Design - fixed to match FastAPI routes
-  analyzeRequirements: (data) => api.post('/analyze-requirements', data),
-  designDataProduct: (data) => api.post('/design-data-product', data),
-  validateDataProduct: (data) => api.post('/validate-data-product', data),
-  
-  // Attributes and Source Systems
-  recommendAttributes: (useCase) => api.get(`/recommend-attributes?use_case=${encodeURIComponent(useCase)}`),
-  getSourceSystems: () => api.get('/source-systems'),
-  mapAttributes: (data) => api.post('/map-attributes', data),
+  // Transform error response for consistent handling
+  if (error.response) {
+    const apiError = new Error(error.response.data?.detail || 'API request failed');
+    apiError.status = error.response.status;
+    apiError.data = error.response.data;
+    return Promise.reject(apiError);
+  }
+  return Promise.reject(error);
 };
+
+api.interceptors.request.use(requestLogger);
+api.interceptors.response.use(response => response, errorHandler);
+
+// Auth token management
+const getAuthToken = () => localStorage.getItem('authToken');
+
+api.interceptors.request.use(config => {
+  const token = getAuthToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// API service with all endpoints matching FastAPI backend
+export const bankGenApi = {
+  // Data Products CRUD
+  getDataProducts: () => api.get('/data-products'),
+  getDataProduct: (id) => api.get(`/data-products/${id}`),
+  createDataProduct: (data) => api.post('/data-products', data),
+  updateDataProduct: (id, data) => api.patch(`/data-products/${id}`, data),
+  deleteDataProduct: (id) => api.delete(`/data-products/${id}`),
+
+  // GenAI Endpoints
+  generateDataProductStructure: (productId) => 
+    api.post(`/data-products/${productId}/generate-structure`),
+  generateSourceMappings: (productId) => 
+    api.post(`/data-products/${productId}/generate-mappings`),
+  validateDataProduct: (productId) => 
+    api.get(`/data-products/${productId}/validate`),
+
+  // Source System Management
+  getSourceSystems: () => api.get('/source-systems'),
+  getSourceSystemAttributes: (systemId) => 
+    api.get(`/source-systems/${systemId}/attributes`),
+
+  // Utility Endpoints
+  checkHealth: () => api.get('/health'),
+  getApiVersion: () => api.get('/version')
+};
+
+// Add types for TypeScript (remove if not using TS)
+/*
+ * @typedef {Object} DataProduct
+ * @property {number} id
+ * @property {string} name
+ * @property {string} description
+ * @property {'Draft'|'Active'|'Archived'} status
+ * @property {string} refresh_frequency
+ * @property {string} last_updated
+ * @property {Object|null} structure
+ * @property {Object|null} source_mappings
+ */
 
 export default api;

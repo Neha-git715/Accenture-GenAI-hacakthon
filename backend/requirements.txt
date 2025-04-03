@@ -1,0 +1,45 @@
+# Core dependencies
+fastapi==0.104.1
+uvicorn==0.24.0
+python-dotenv==1.0.0
+pydantic==2.5.2
+python-multipart==0.0.6
+
+# API and security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Testing
+pytest>=7.3.0
+pytest-asyncio>=0.21.0
+
+# Additional dependencies
+spacy==3.7.2
+en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1.tar.gz
+ollama==0.1.6
+SQLAlchemy==2.0.23
+aiohttp==3.9.1
+numpy==1.26.2
+pandas==2.1.3
+
+class DataFlowManagerAgent(BaseAgent):
+    async def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        # Define ingress processes
+        # Define egress processes
+        # Create data pipeline configurations
+        # Handle data refresh schedules
+
+class EnhancedLLMProcessor:
+    def __init__(self):
+        self.conversation_history = []
+        self.few_shot_examples = self.load_examples()
+
+    async def generate_with_context(self, prompt: str, context: Dict) -> Dict:
+        enhanced_prompt = self.build_prompt_with_examples(prompt)
+        return await self.call_llm_with_history(enhanced_prompt)
+
+class SourceSystemHandler:
+    async def profile_source_data(self, connection_details: Dict) -> Dict:
+        # Sample data
+        # Profile data characteristics
+        # Generate transformation suggestions
