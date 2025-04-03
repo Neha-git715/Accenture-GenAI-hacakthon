@@ -139,7 +139,8 @@ async def create_data_product(product: DataProductCreate):
         "name": product.name,
         "description": product.description,
         "status": product.status,
-        "refresh_frequency": product.refresh_frequency
+        "refresh_frequency": product.refresh_frequency,
+        "structure": None  # Initialize structure to None by default
     }
     
     # Generate structure with AI if use_case provided
@@ -162,9 +163,13 @@ async def create_data_product(product: DataProductCreate):
     )
     conn.commit()
     product_id = cursor.lastrowid
+    
+    # Fetch the created product to return complete object
+    cursor.execute("SELECT * FROM data_products WHERE id = ?", (product_id,))
+    created_product = dict(cursor.fetchone())
     conn.close()
     
-    return {**product_data, "id": product_id, "certification_status": "Pending"}
+    return created_product
 
 @api_router.put("/data-products/{product_id}", response_model=DataProduct)
 async def update_data_product(product_id: int, product: DataProductUpdate):

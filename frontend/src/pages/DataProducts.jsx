@@ -40,11 +40,11 @@ export default function DataProducts() {
   const fetchDataProducts = async () => {
     try {
       setLoading(true)
-      const response = await bankGenApi.get('/data-products')
+      const response = await bankGenApi.getDataProducts()
       setProducts(response.data)
     } catch (err) {
       console.error('Fetch error:', err)
-      setError(`Failed to load data products: ${err.response?.data?.detail || err.message}`)
+      setError(`Failed to load data products: ${err.data?.detail || err.message}`)
     } finally {
       setLoading(false)
     }
@@ -55,7 +55,7 @@ export default function DataProducts() {
     e.preventDefault()
     try {
       setLoading(true)
-      const response = await bankGenApi.post('/data-products', {
+      const response = await bankGenApi.createDataProduct({
         ...newProduct,
         use_case: newProduct.use_case || undefined // Only send if exists
       })
@@ -63,7 +63,7 @@ export default function DataProducts() {
       closeModal('create')
       resetForm()
     } catch (err) {
-      setError(`Creation failed: ${err.response?.data?.detail || err.message}`)
+      setError(`Creation failed: ${err.data?.detail || err.message}`)
     } finally {
       setLoading(false)
     }
@@ -72,10 +72,10 @@ export default function DataProducts() {
   const handleDeleteProduct = async (id) => {
     if (!confirm('Delete this data product permanently?')) return
     try {
-      await bankGenApi.delete(`/data-products/${id}`)
+      await bankGenApi.deleteDataProduct(id)
       setProducts(products.filter(p => p.id !== id))
     } catch (err) {
-      setError(`Deletion failed: ${err.response?.data?.detail || err.message}`)
+      setError(`Deletion failed: ${err.data?.detail || err.message}`)
     }
   }
 
@@ -83,13 +83,11 @@ export default function DataProducts() {
   const generateDataProductDesign = async (productId) => {
     try {
       setLoading(true)
-      const response = await bankGenApi.post(
-        `/data-products/${productId}/generate-mappings`
-      )
+      const response = await bankGenApi.generateSourceMappings(productId)
       setModalData({ ...modalData, design: response.data })
       openModal('design')
     } catch (err) {
-      setError(`AI generation failed: ${err.response?.data?.detail || err.message}`)
+      setError(`AI generation failed: ${err.data?.detail || err.message}`)
     } finally {
       setLoading(false)
     }
@@ -98,13 +96,11 @@ export default function DataProducts() {
   const validateDataProduct = async (productId) => {
     try {
       setLoading(true)
-      const response = await bankGenApi.get(
-        `/data-products/${productId}/validate`
-      )
+      const response = await bankGenApi.validateDataProduct(productId)
       setModalData({ ...modalData, validation: response.data })
       openModal('validate')
     } catch (err) {
-      setError(`Validation failed: ${err.response?.data?.detail || err.message}`)
+      setError(`Validation failed: ${err.data?.detail || err.message}`)
     } finally {
       setLoading(false)
     }

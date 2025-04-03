@@ -1,23 +1,23 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+const API_BASE_URL = "http://localhost:8000/api/v1";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
-  withCredentials: true
+  withCredentials: true,
 });
 
 // Enhanced request logger
 const requestLogger = (config) => {
-  if (process.env.NODE_ENV === 'development') {
-    console.debug('API Request:', {
+  if (process.env.NODE_ENV === "development") {
+    console.debug("API Request:", {
       method: config.method.toUpperCase(),
       url: config.url,
       params: config.params,
-      data: config.data
+      data: config.data,
     });
   }
   return config;
@@ -25,13 +25,13 @@ const requestLogger = (config) => {
 
 // Enhanced error handler
 const errorHandler = (error) => {
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === "development") {
     const errorData = {
       message: error.message,
       config: {
         url: error.config?.url,
-        method: error.config?.method
-      }
+        method: error.config?.method,
+      },
     };
 
     if (error.response) {
@@ -41,12 +41,14 @@ const errorHandler = (error) => {
       errorData.request = error.request;
     }
 
-    console.error('API Error:', errorData);
+    console.error("API Error:", errorData);
   }
 
   // Transform error response for consistent handling
   if (error.response) {
-    const apiError = new Error(error.response.data?.detail || 'API request failed');
+    const apiError = new Error(
+      error.response.data?.detail || "API request failed"
+    );
     apiError.status = error.response.status;
     apiError.data = error.response.data;
     return Promise.reject(apiError);
@@ -55,12 +57,12 @@ const errorHandler = (error) => {
 };
 
 api.interceptors.request.use(requestLogger);
-api.interceptors.response.use(response => response, errorHandler);
+api.interceptors.response.use((response) => response, errorHandler);
 
 // Auth token management
-const getAuthToken = () => localStorage.getItem('authToken');
+const getAuthToken = () => localStorage.getItem("authToken");
 
-api.interceptors.request.use(config => {
+api.interceptors.request.use((config) => {
   const token = getAuthToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -71,28 +73,28 @@ api.interceptors.request.use(config => {
 // API service with all endpoints matching FastAPI backend
 export const bankGenApi = {
   // Data Products CRUD
-  getDataProducts: () => api.get('/data-products'),
+  getDataProducts: () => api.get("/data-products"),
   getDataProduct: (id) => api.get(`/data-products/${id}`),
-  createDataProduct: (data) => api.post('/data-products', data),
+  createDataProduct: (data) => api.post("/data-products", data),
   updateDataProduct: (id, data) => api.patch(`/data-products/${id}`, data),
   deleteDataProduct: (id) => api.delete(`/data-products/${id}`),
 
   // GenAI Endpoints
-  generateDataProductStructure: (productId) => 
+  generateDataProductStructure: (productId) =>
     api.post(`/data-products/${productId}/generate-structure`),
-  generateSourceMappings: (productId) => 
+  generateSourceMappings: (productId) =>
     api.post(`/data-products/${productId}/generate-mappings`),
-  validateDataProduct: (productId) => 
+  validateDataProduct: (productId) =>
     api.get(`/data-products/${productId}/validate`),
 
   // Source System Management
-  getSourceSystems: () => api.get('/source-systems'),
-  getSourceSystemAttributes: (systemId) => 
+  getSourceSystems: () => api.get("/source-systems"),
+  getSourceSystemAttributes: (systemId) =>
     api.get(`/source-systems/${systemId}/attributes`),
 
   // Utility Endpoints
-  checkHealth: () => api.get('/health'),
-  getApiVersion: () => api.get('/version')
+  checkHealth: () => api.get("/health"),
+  getApiVersion: () => api.get("/version"),
 };
 
 // Add types for TypeScript (remove if not using TS)
