@@ -17,7 +17,19 @@ function App() {
                 <h1 className="text-xl font-bold text-gray-900">BankGen 360</h1>
               </div>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center space-x-4">
+              <a
+                href="/"
+                className="text-gray-700 hover:text-gray-900"
+              >
+                Data Products
+              </a>
+              <a
+                href="/dashboard"
+                className="text-gray-700 hover:text-gray-900"
+              >
+                Dashboard
+              </a>
               {user ? (
                 <span className="text-gray-700">{user.email}</span>
               ) : (

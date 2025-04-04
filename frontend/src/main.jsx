@@ -13,12 +13,14 @@ import './index.css'
 import App from './App'
 import DataProducts from './pages/DataProducts'
 import Login from './pages/Login'
+import Dashboard from './pages/Dashboard'
 
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<App />}>
       <Route index element={<DataProducts />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/dashboard" element={<Dashboard />} />
     </Route>
   ),
   {

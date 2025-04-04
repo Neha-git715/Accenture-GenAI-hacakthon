@@ -1,39 +1,62 @@
+import React, { useEffect, useState } from 'react';
 import {
   ChartBarIcon,
   DocumentTextIcon,
   ClipboardDocumentListIcon,
   CheckCircleIcon,
-} from '@heroicons/react/24/outline'
+} from '@heroicons/react/24/outline';
+import { bankGenApi } from '../services/api';
 
-const stats = [
-  { name: 'Total Data Products', value: '12', icon: DocumentTextIcon },
-  { name: 'Active Requirements', value: '8', icon: ClipboardDocumentListIcon },
-  { name: 'Validation Rules', value: '24', icon: CheckCircleIcon },
-  { name: 'Data Quality Score', value: '98%', icon: ChartBarIcon },
-]
+const Dashboard = () => {
+  const [stats, setStats] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-const recentActivity = [
-  {
-    id: 1,
-    type: 'Data Product Created',
-    name: 'Customer 360 View',
-    date: '2 hours ago',
-  },
-  {
-    id: 2,
-    type: 'Requirement Updated',
-    name: 'Transaction History',
-    date: '4 hours ago',
-  },
-  {
-    id: 3,
-    type: 'Validation Rule Added',
-    name: 'Balance Validation',
-    date: '6 hours ago',
-  },
-]
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch data products
+        const { data: products } = await bankGenApi.getDataProducts();
+        setStats([
+          { name: 'Total Data Products', value: products.length.toString(), icon: DocumentTextIcon },
+          // Assuming you fetch active requirements and validation rules separately
+          { name: 'Active Requirements', value: '8', icon: ClipboardDocumentListIcon },
+          { name: 'Validation Rules', value: '24', icon: CheckCircleIcon },
+          { name: 'Data Quality Score', value: '98%', icon: ChartBarIcon },
+        ]);
+        
+        // Create activity data based on the last_updated property
+        const activityData = products.map(product => ({
+          id: product.id,
+          type: 'Data Product Created',
+          name: product.name,
+          date: new Intl.DateTimeFormat('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+            second: 'numeric',
+            hour12: true
+          }).format(new Date(product.last_updated)), // Format the last_updated timestamp
+        }));
+        setRecentActivity(activityData);
 
-export default function Dashboard() {
+      } catch (err) {
+        setError("Failed to fetch the data.");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -98,5 +121,7 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
-  )
-} 
+  );
+}
+
+export default Dashboard;
