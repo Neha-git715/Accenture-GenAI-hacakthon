@@ -85,7 +85,7 @@ export const bankGenApi = {
   generateSourceMappings: (productId) =>
     api.post(`/data-products/${productId}/generate-mappings`),
   validateDataProduct: (productId) =>
-    api.get(`/data-products/${productId}/validate`),
+    api.post(`/data-products/${productId}/validate`),
 
   // Source System Management
   getSourceSystems: () => api.get("/source-systems"),

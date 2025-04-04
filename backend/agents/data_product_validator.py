@@ -37,7 +37,7 @@ class DataProductValidatorAgent(BaseAgent):
             """
 
             response = ollama.generate(
-                model='mistral',
+                model='tinyllama',
                 prompt=prompt,
                 format='json',
                 options={'temperature': 0.2}

@@ -60,7 +60,7 @@ class SourceSystemMapperAgent(BaseAgent):
             """
 
             response = ollama.generate(
-                model='mistral',  # Using mistral for better JSON handling
+                model='tinyllama',  # Using mistral for better JSON handling
                 prompt=prompt,
                 format='json',
                 options={

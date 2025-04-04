@@ -84,6 +84,8 @@ export default function DataProducts() {
     try {
       setLoading(true)
       const response = await bankGenApi.generateSourceMappings(productId)
+      console.log(response);
+      
       setModalData({ ...modalData, design: response.data })
       openModal('design')
     } catch (err) {
@@ -97,6 +99,8 @@ export default function DataProducts() {
     try {
       setLoading(true)
       const response = await bankGenApi.validateDataProduct(productId)
+      console.log(response);
+      
       setModalData({ ...modalData, validation: response.data })
       openModal('validate')
     } catch (err) {

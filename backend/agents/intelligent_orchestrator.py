@@ -62,7 +62,7 @@ class IntelligentOrchestrator:
         """Get enhanced LLM response"""
         try:
             response = ollama.generate(
-                model='mistral',  # Using mistral for better JSON handling
+                model='tinyllama',  # Using mistral for better JSON handling
                 prompt=prompt,
                 format='json',
                 options={
@@ -75,12 +75,25 @@ class IntelligentOrchestrator:
                 }
             )
             
-            # Log the raw response for debugging
-            logging.debug(f"Raw JSON response: {response['response']}")
+            # Extract raw response
+            raw_response = response.get('response', '').strip()
             
-            # Attempt to parse the JSON response
-            return json.loads(response['response'])
+            # Log the raw response for debugging
+            logging.debug(f"Raw response: {raw_response}")
+            
+            # Check if the response seems like valid JSON
+            if not raw_response.startswith("{") or not raw_response.endswith("}"):
+                raise Exception(f"Response doesn't seem like valid JSON: {raw_response}")
+            
+            # Attempt to parse JSON
+            return json.loads(raw_response)
+
+        except json.JSONDecodeError as e:
+            logging.error(f"JSON Decode Error: {str(e)}")
+            logging.error(f"Response content: {raw_response}")
+            raise Exception(f"LLM processing failed due to JSON decoding error: {str(e)}")
         except Exception as e:
+            logging.error(f"LLM processing failed: {str(e)}")
             raise Exception(f"LLM processing failed: {str(e)}")
 
     def _update_learning(self, prompt: str, response: Dict, context: Dict):
