@@ -184,6 +184,20 @@ async def create_data_product(product: DataProductCreate):
     
     return row_to_product(row)
 
+@api_router.get("/data-products/{product_id}", response_model=DataProduct)
+async def get_data_product_by_id(product_id: int):
+    """Get a single data product by ID"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM data_products WHERE id = ?", (product_id,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Data product not found")
+
+    return row_to_product(row)
+
 @api_router.put("/data-products/{product_id}", response_model=DataProduct)
 async def update_data_product(product_id: int, product: DataProductUpdate):
     """Update an existing data product"""
@@ -275,9 +289,10 @@ async def generate_source_mappings(product_id: int):
     - source_system (core banking, CRM, etc.)
     - source_fields
     - transformation_rules
-    - data_quality_checks
+    - data_quality_check
+    - attributes
     
-    Ensure your response is valid JSON format.
+    Ensure your response is valid JSON format. Give proper resonable response.
     """
     
     try:
@@ -301,7 +316,7 @@ async def generate_source_mappings(product_id: int):
         if not isinstance(mappings, dict):
             raise ValueError("Generated mappings is not a valid JSON object")
         
-        required_fields = ['source_system', 'source_fields', 'transformation_rules', 'data_quality_checks']
+        required_fields = ['source_system', 'source_fields', 'transformation_rules', 'data_quality_checks', 'attributes']
         missing_fields = [field for field in required_fields if field not in mappings]
         
         if missing_fields:
