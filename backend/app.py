@@ -292,7 +292,7 @@ async def generate_source_mappings(product_id: int):
     - data_quality_check
     - attributes
     
-    Ensure your response is valid JSON format. Give proper resonable response.
+    Ensure your response is valid JSON format.
     """
     
     try:
@@ -316,7 +316,7 @@ async def generate_source_mappings(product_id: int):
         if not isinstance(mappings, dict):
             raise ValueError("Generated mappings is not a valid JSON object")
         
-        required_fields = ['source_system', 'source_fields', 'transformation_rules', 'data_quality_checks', 'attributes']
+        required_fields = ['source_system', 'source_fields', 'transformation_rules', 'data_quality_checks']
         missing_fields = [field for field in required_fields if field not in mappings]
         
         if missing_fields:

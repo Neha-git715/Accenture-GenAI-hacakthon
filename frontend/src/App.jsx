@@ -19,23 +19,23 @@ function App() {
             </div>
             <div className="flex items-center space-x-4">
               <a
-                href="/"
-                className="text-gray-700 hover:text-gray-900"
-              >
-                Data Products
-              </a>
-              <a
                 href="/dashboard"
-                className="text-gray-700 hover:text-gray-900"
+                className="text-gray-700 hover:bg-blue-500 px-4 py-2 rounded-md hover:text-white hover:text-gray-900"
               >
                 Dashboard
+              </a>
+              <a
+                href="/"
+                className="text-gray-700 hover:bg-blue-500 px-4 py-2 rounded-md hover:text-white hover:text-gray-900"
+              >
+                Data Products
               </a>
               {user ? (
                 <span className="text-gray-700">{user.email}</span>
               ) : (
                 <a
                   href="/login"
-                  className="text-gray-700 hover:text-gray-900"
+                  className="hover:text-gray-300 bg-blue-700 px-4 py-2 text-white rounded-md"
                 >
                   Login
                 </a>

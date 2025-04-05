@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   PlusIcon,
   EyeIcon,
@@ -21,9 +21,17 @@ export default function DataProducts() {
   });
   const [currentProduct, setCurrentProduct] = useState(null);
   const [modalData, setModalData] = useState({
-    attributes: [],
-    design: null,
-    validation: null,
+    id: null,
+    name: "",
+    description: "",
+    status: "",
+    structure: {
+      entities: [],
+    },
+    source_mappings: {},
+    last_updated: null,
+    refresh_frequency: "",
+    certification_status: "",
   });
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -86,9 +94,9 @@ export default function DataProducts() {
     try {
       setLoading(true);
       const response = await bankGenApi.getDataProduct(productId);
-      console.log(response.data.source_mappings.attributes);
+      console.log(response.data);
 
-      setModalData({ ...modalData, attributes: response.data.source_mappings.attributes });
+      setModalData(response.data);
     } catch (err) {
       setError(`Failed to load attributes: ${err.data?.detail || err.message}`);
     } finally {
@@ -256,7 +264,7 @@ export default function DataProducts() {
                 <tr key={product.id}>
                   <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900">
                     {product.name}
-                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                    <p className="text-xs text-gray-500 mt-1 line-clamp-2 max-w-80">
                       {product.description}
                     </p>
                   </td>
@@ -464,7 +472,7 @@ export default function DataProducts() {
                 <div className="flex justify-center py-12">
                   <ArrowPathIcon className="h-8 w-8 text-blue-600 animate-spin" />
                 </div>
-              ) : modalData.attributes.length > 0 ? (
+              ) : currentProduct.structure.entities?.length > 0 ? (
                 <div className="space-y-4">
                   <table className="min-w-full divide-y divide-gray-300">
                     <thead className="bg-gray-50">
@@ -475,35 +483,33 @@ export default function DataProducts() {
                         <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                           Type
                         </th>
-                        <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                          Description
-                        </th>
-                        <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                          Required
-                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 bg-white">
-                      {modalData.attributes.map((attr, index) => (
-                        <tr key={index}>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900">
-                            {attr.name}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                            {attr.type}
-                          </td>
-                          <td className="px-3 py-4 text-sm text-gray-500">
-                            {attr.description}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                            {attr.required ? (
-                              <span className="text-red-500">Yes</span>
-                            ) : (
-                              <span className="text-gray-500">No</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                      {currentProduct.structure.entities.map(
+                        (entity, eIndex) => (
+                          <React.Fragment key={eIndex}>
+                            <tr className="bg-gray-100">
+                              <td
+                                colSpan={4}
+                                className="px-3 py-2 text-sm font-semibold text-gray-800"
+                              >
+                                {entity.name}
+                              </td>
+                            </tr>
+                            {entity.attributes.map((attr, index) => (
+                              <tr key={index}>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900">
+                                  {attr.name}
+                                </td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                  {attr.type}
+                                </td>
+                              </tr>
+                            ))}
+                          </React.Fragment>
+                        )
+                      )}
                     </tbody>
                   </table>
                 </div>

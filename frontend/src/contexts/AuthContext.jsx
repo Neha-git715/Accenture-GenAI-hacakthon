@@ -3,7 +3,11 @@ import { createContext, useContext, useState } from 'react';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  // Initialize user from localStorage if available
+  const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
 
   const login = async (credentials) => {
     try {
@@ -13,7 +17,9 @@ export const AuthProvider = ({ children }) => {
           email: credentials.email,
           name: 'Demo User'
         };
+        // Save user to state and localStorage
         setUser(mockUser);
+        localStorage.setItem('user', JSON.stringify(mockUser));
         return mockUser;
       }
       throw new Error('Invalid credentials');
@@ -25,6 +31,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem('user');
   };
 
   return (
@@ -40,4 +47,4 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}; 
+};
