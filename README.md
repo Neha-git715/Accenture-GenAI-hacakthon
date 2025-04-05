@@ -6,6 +6,13 @@ This project implements a multi-agent system for designing and recommending Bank
 ### Solution Overview
 This project implements a multi-agent system for designing and recommending Customer 360 data products in retail banking. The system automates the process of understanding business requirements, designing data structures, and creating attribute mappings.
 
+
+
+ppt and video submission: https://drive.google.com/drive/folders/1KSodntoSZbzT26Z8StLR7DB6stOi8jpV?usp=sharing
+
+
+
+
 ### System Components
 1. **Use Case Interpreter Agent**
    - Analyzes business requirements
