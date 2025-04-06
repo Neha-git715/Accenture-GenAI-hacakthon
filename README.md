@@ -6,13 +6,6 @@ This project implements a multi-agent system for designing and recommending Bank
 ### Solution Overview
 This project implements a multi-agent system for designing and recommending Customer 360 data products in retail banking. The system automates the process of understanding business requirements, designing data structures, and creating attribute mappings.
 
-
-
-ppt and video submission: https://drive.google.com/drive/folders/1KSodntoSZbzT26Z8StLR7DB6stOi8jpV?usp=sharing
-
-
-
-
 ### System Components
 1. **Use Case Interpreter Agent**
    - Analyzes business requirements
@@ -47,10 +40,10 @@ ppt and video submission: https://drive.google.com/drive/folders/1KSodntoSZbzT26
 - Secure API endpoints for agent communication
 - Data governance integration
 
-### Getting Started
-1. Install dependencies: `pip install -r requirements.txt`
-2. Configure environment variables
-3. Run the application: `python app.py`
-
 ### API Documentation
 Access the API documentation at `/docs` endpoint after starting the server.
+
+---
+
+### Additional Resources
+- **PPT and Video Submission**: [Link to Submission](https://drive.google.com/drive/folders/1KSodntoSZbzT26Z8StLR7DB6stOi8jpV?usp=sharing)
