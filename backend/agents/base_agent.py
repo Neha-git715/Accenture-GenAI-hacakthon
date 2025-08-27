@@ -1,35 +1,24 @@
-from abc import ABC, abstractmethod
-from typing import Any, Dict
-import logging
+# In backend/agents/base_agent.py
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+import os
+from dotenv import load_dotenv
+# NEW: Import a more generic LLM connector from langchain-community
+from langchain_community.chat_models.litellm import ChatLiteLLM
 
-class BaseAgent(ABC):
-    def __init__(self, name: str, description: str):
-        self.name = name
-        self.description = description
-        self.logger = logging.getLogger(f"agent.{name}")
+# Load environment variables from your .env file
+load_dotenv()
 
-    @abstractmethod
-    def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Process the input data and return results"""
-        pass
+# Check for the Google API Key (this part is still good practice)
+if not os.environ.get("GOOGLE_API_KEY"):
+    raise ValueError(
+        "Google API key not found. Please make sure you have a GOOGLE_API_KEY in your .env file"
+    )
 
-    def validate_input(self, input_data: Dict[str, Any]) -> bool:
-        """Validate the input data before processing"""
-        return True
-
-    def log_activity(self, message: str, level: str = "info"):
-        """Log agent activity"""
-        log_method = getattr(self.logger, level.lower())
-        log_method(f"[{self.name}] {message}")
-
-    def format_response(self, data: Dict[str, Any], status: str = "success", message: str = "") -> Dict[str, Any]:
-        """Format the agent's response"""
-        return {
-            "status": status,
-            "message": message,
-            "agent": self.name,
-            "data": data
-        } 
+# NEW: Initialize the LLM using ChatLiteLLM
+# This passes the model name directly in the format the docs recommend.
+llm = ChatLiteLLM(
+    model="gemini/gemini-1.5-flash",
+    # api_key=os.environ["GOOGLE_API_KEY"],
+    verbose=True,
+    temperature=0.5
+)

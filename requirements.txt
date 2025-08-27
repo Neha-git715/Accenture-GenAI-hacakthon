@@ -1,0 +1,14 @@
+# In requirements.txt
+
+# --- Application Specific ---
+fastapi
+uvicorn
+python-dotenv
+streamlit
+pandas
+SQLAlchemy
+
+# --- AI Stack (Final) ---
+crewai
+crewai-tools
+langchain-community
